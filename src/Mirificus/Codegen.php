@@ -1,85 +1,121 @@
 <?php
 
+/**
+ * @package Mirificus
+ */
 namespace Mirificus;
 
+/**
+ * Generates PHP classes from various structured data sources.
+ * @package Mirificus\Codegen
+ */
 abstract class Codegen {
 	/**
 	 * This static array contains an array of active and executed codegen objects, based
-	 * on the XML Configuration passed in to Run()
-	 *
-	 * @var CodeGen[] array of active/executed codegen objects
+	 * on the XML Configuration passed in to Mirificus\Codegen::Run().
+	 * @var CodeGen[] Array of active/executed codegen objects.
+	 * @static
 	 */
 	public static $CodeGenArray;
 
+	/**
+	 * @var string $SettingsFilePath Path to the settings XML file.
+	 * @static
+	 */
 	public static $SettingsFilePath;
-	
+
 	/**
 	 * This is the SimpleXML representation of the Settings XML file
-	 *
-	 * @var SimpleXmlElement the XML representation
+	 * @var SimpleXmlElement $SettingsXml
+	 * @access protected
+	 * @static
 	 */
 	protected static $SettingsXml;
-	
+
 	/**
-	 * Template Escape Begin (from CodeGen Settings)
-	 *
-	 * @var string $TemplateEscapeBegin
+	 * @var string $TemplateEscapeBegin Template Escape Pattern Begin
+	 * @access protected
+	 * @static
 	 */
 	protected static $TemplateEscapeBegin;
+
+	/**
+	 * @var string $TemplateEscapeBeginLength
+	 * @access protected
+	 * @static
+	 */
 	protected static $TemplateEscapeBeginLength;
 
 	/**
-	 * Template Escape End (from CodeGen Settings)
-	 *
-	 * @var string $TemplateEscapeEnd
+	 * @var string $TemplateEscapeEnd Template Escape Pattern End
+	 * @access protected
+	 * @static
 	 */
 	protected static $TemplateEscapeEnd;
+
+	/**
+	 * @var string $TemplateEscapeEndLength
+	 * @access protected
+	 * @static
+	 */
 	protected static $TemplateEscapeEndLength;
-	
+
 	/**
 	 * Application Name (from CodeGen Settings)
-	 *
+	 * @todo Ditch this, who cares?
 	 * @var string $ApplicationName
+	 * @access protected
+	 * @static
 	 */
 	protected static $ApplicationName;
-	
-	// Relative Paths (from __QCUBED_CORE__) to the CORE Template and Subtemplate Directories
+
+	// Relative Paths to the CORE Template and Subtemplate Directories
 	const TemplatesPath = '/codegen/templates/';
-//		const SubTemplatesPath = '/codegen/subtemplates/';
+//	const SubTemplatesPath = '/codegen/subtemplates/';
 
 	// Relative Paths (from __QCUBED__) to the CUSTOM Template and Subtemplate Directories
 	const TemplatesPathCustom = '/codegen/templates/';
 
 	/**
-	 * @var string[] array of directories to be excluded in codegen (lower cased)
+	 * Array of directories to be excluded in codegen (lower cased)
+	 * @var string[]
 	 * @access protected
+	 * @static
 	 */
 	protected static $DirectoriesToExcludeArray = array('.','..','.svn','svn','cvs','.git');
-	
-	// Class Name Suffix/Prefix
+
+	/** @var string $strClassPrefix Class Name Prefix */
 	protected $strClassPrefix;
+
+	/**
+	 * @var string $strClassSuffix Class Name Suffix
+	 * @access protected
+	 */
 	protected $strClassSuffix;
-	
-	// Holds an error log.
+
+	/**
+	 * @var string $strErrors Holds an error log.
+	 * @access protected
+	 */
 	protected $strErrors;
-	
-	
-	
-	
-	
-	
-	
+
+	/**
+	 * Run the codegen with a settings file. The settings file is in XML.
+	 * @param string $strSettingsXmlFilePath The path to the settings xml.
+	 * @return void
+	 * @static
+	 */
 	public static function Run($strSettingsXmlFilePath) {
 		static::$CodeGenArray = array();
 		static::$SettingsFilePath = $strSettingsXmlFilePath;
-		
+
 		if (!file_exists($strSettingsXmlFilePath) || !is_file($strSettingsXmlFilePath)) {
 			echo 'FATAL ERROR: CodeGen Settings XML File (' . $strSettingsXmlFilePath . ') was not found.';
 			return;
 		}
 
 		static::$SettingsXml = new \SimpleXMLElement(file_get_contents($strSettingsXmlFilePath));
-		
+
 		// Iterate Through DataSources
 		if (static::$SettingsXml->dataSources->asXML()){
 			foreach (static::$SettingsXml->dataSources->children() as $objChildNode) {
@@ -97,16 +133,15 @@ abstract class Codegen {
 				}
 			}
 		}
-		
+
 		// Set the Template Escaping
 		static::$TemplateEscapeBegin = static::LookupSetting(static::$SettingsXml, 'templateEscape', 'begin');
 		static::$TemplateEscapeEnd = static::LookupSetting(static::$SettingsXml, 'templateEscape', 'end');
 		static::$TemplateEscapeBeginLength = strlen(static::$TemplateEscapeBegin);
 		static::$TemplateEscapeEndLength = strlen(static::$TemplateEscapeEnd);
-		
+
 		// Application Name - No one cares about this setting.
 		static::$ApplicationName = static::LookupSetting(static::$SettingsXml, 'name', 'application');
-
 	}
 
 	/**
@@ -116,6 +151,7 @@ abstract class Codegen {
 	 *
 	 * If No Tag Name is passed in, then attribute/value lookup is based on the root node, itself.
 	 *
+	 * @static
 	 * @param SimpleXmlElement $objNode
 	 * @param string $strTagName
 	 * @param string $strAttributeName
@@ -151,10 +187,11 @@ abstract class Codegen {
 		   return $strToReturn;
 	   }
 	}
-	
+
 	/**
-	 *
+	 * Generate an aggregate of the data.
 	 * @return array
+	 * @static
 	 */
 	public static function GenerateAggregate() {
 	   $objDbOrmCodeGen = array();
@@ -173,17 +210,17 @@ abstract class Codegen {
 
 	   return $strToReturn;
 	}
-	
+
 	/**
 	 * Given a template prefix (e.g. db_orm_, db_type_, rest_, soap_, etc.), pull
-	 * all the _*.tpl templates from any subfolders of the template prefix in QCodeGen::TemplatesPath and QCodeGen::TemplatesPathCustom,
+	 * all the _*.tpl templates from any subfolders of the template prefix in Mirificus\CodeGen::TemplatesPath and Mirificus\CodeGen::TemplatesPathCustom,
 	 * and call GenerateFile() on each one.  If there are any template files that reside
 	 * in BOTH TemplatesPath AND TemplatesPathCustom, then only use the TemplatesPathCustom one (which
 	 * in essence overrides the one in TemplatesPath).
 	 *
-	 * @param string $strTemplatePrefix the prefix of the templates you want to generate against
-	 * @param mixed[] $mixArgumentArray array of arguments to send to EvaluateTemplate
-	 * @return boolean success/failure on whether or not all the files generated successfully
+	 * @param string $strTemplatePrefix The prefix of the templates you want to generate against.
+	 * @param mixed[] $mixArgumentArray Array of arguments to send to EvaluateTemplate.
+	 * @return boolean Whether or not all the files generated successfully.
 	 */
 	public function GenerateFiles($strTemplatePrefix, $mixArgumentArray) {
 	   // Make sure both our Template and TemplateCustom paths are valid
@@ -248,11 +285,12 @@ abstract class Codegen {
 
 	   return $blnSuccess;
 	}
-	
+
 	/**
-	 * Pluralizes field names
-	 * @param string $strName
-	 * @return string
+	 * Pluralizes field names.
+	 * @param string $strName The non-pluralized field name.
+	 * @return string The pluralized field name.
+	 * @access protected
 	 */
 	protected function Pluralize($strName) {
 		// Special Rules go Here

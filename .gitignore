@@ -1,2 +1,4 @@
 vendor/
+docs/
 composer.lock
+phpdoc-*

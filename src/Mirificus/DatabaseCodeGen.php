@@ -1,34 +1,71 @@
 <?php
 
+/**
+ * @package Mirificus
+ */
 namespace Mirificus;
 
+/**
+ * Will generate an entire ORM from a database source.
+ * The adapter(s) to use is an issue still being worked out.
+ *
+ * @package Mirificus/DatabaseCodeGen
+ * @property-read array $TableArray The array of analyzed tables
+ * @property-read array $TypeTableArray The array of analyzed type tables
+ * @property-read int $DatabaseIndex The index of this DB in Mirificus/Core::$Database[]
+ */
 class DatabaseCodeGen extends Codegen{
 
+	/**
+	 * Association table names
+	 * @var array $strAssociationTableNameArray
+	 */
 	protected $strAssociationTableNameArray;
 
+	/**
+	 * The database object to Codegen against.
+	 */
 	protected $objDb;
+
+	/**
+	 * Array of database tables from analysis
+	 */
 	protected $objTableArray;
+
+	/**
+	 * Array of database type tables from analysis
+	 * @var array $objTypeTableArray
+	 */
 	protected $objTypeTableArray;
+
+	/**
+	 * The index of this database to be read from Mirificus/Core::$Database[].
+	 * @var int $intDatabaseIndex
+	 */
 	protected $intDatabaseIndex;
+
+	/**
+	 * Tables to exclude from codegen
+	 */
 	protected $strExcludedTableArray;
 
 	/** @var string The delimiter to be used for parsing comments on the DB tables for being used as the name of Meta control's Label */
-	protected $strCommentMetaControlLabelDelimiter;
+	//protected $strCommentMetaControlLabelDelimiter;
 
 	// Uniquely Associated Objects
 	protected $strAssociatedObjectPrefix;
 	protected $strAssociatedObjectSuffix;
-	
+
 	// Table Suffixes
 	protected $strTypeTableSuffixArray;
 	protected $intTypeTableSuffixLengthArray;
 	protected $strAssociationTableSuffix;
 	protected $intAssociationTableSuffixLength;
-	
+
 	// Table Prefix
 	protected $strStripTablePrefix;
 	protected $intStripTablePrefixLength;
-	
+
 	// Exclude Patterns & Lists
 	protected $strExcludePattern;
 	protected $strExcludeListArray;
@@ -36,29 +73,45 @@ class DatabaseCodeGen extends Codegen{
 	// Include Patterns & Lists
 	protected $strIncludePattern;
 	protected $strIncludeListArray;
-	
-	// Manual Query (e.g. "Beta 2 Query") Suppor
+
+	// Manual Query (e.g. "Beta 2 Query") Support
 	protected $blnManualQuerySupport = false;
-	
+
 	// Relationship Scripts
 	protected $strRelationships;
 
+	/**
+	 * If you are not using a DB table with defined FKs,
+	 * then you can use a relationship script to define them.
+	 * @var string $strRelationshipsScriptPath
+	 */
 	protected $strRelationshipsScriptPath;
+
+	/** @var string $strRelationshipsScriptFormat */
 	protected $strRelationshipsScriptFormat;
-	
+
+	/** @var bool $blnRelationshipsIgnoreCase */
 	protected $blnRelationshipsIgnoreCase;
+
+	/** @var bool $blnRelationshipsScriptIgnoreCase */
 	protected $blnRelationshipsScriptIgnoreCase;
 
+	/** @var array $strRelationshipLinesApp */
 	protected $strRelationshipLinesApp = array();
+
+	/** @var array $strRelationshipLinesSql */
 	protected $strRelationshipLinesSql = array();
 
+	/**
+	 * @param SimpleXmlElement $objSettingsXml
+	 */
 	public function __construct($objSettingsXml){
 		// Setup Local Arrays
 		$this->strAssociationTableNameArray = array();
 		$this->objTableArray = array();
 		$this->objTypeTableArray = array();
 		$this->strExcludedTableArray = array();
-		
+
 		// Set the DatabaseIndex
 		$this->intDatabaseIndex = CodeGen::LookupSetting($objSettingsXml, null, 'index', Type::Integer);
 		// Check to make sure things that are required are there
@@ -82,13 +135,13 @@ class DatabaseCodeGen extends Codegen{
 		}
 		$this->strAssociationTableSuffix = CodeGen::LookupSetting($objSettingsXml, 'associationTableIdentifier', 'suffix');
 		$this->intAssociationTableSuffixLength = strlen($this->strAssociationTableSuffix);
-		
+
 		// Stripping TablePrefixes
 		$this->strStripTablePrefix = CodeGen::LookupSetting($objSettingsXml, 'stripFromTableName', 'prefix');
 		$this->intStripTablePrefixLength = strlen($this->strStripTablePrefix);
 
-		
-		
+
+
 		// Exclude/Include Tables
 		$this->strExcludePattern = Codegen::LookupSetting($objSettingsXml, 'excludeTables', 'pattern');
 		$strExcludeList = Codegen::LookupSetting($objSettingsXml, 'excludeTables', 'list');
@@ -110,7 +163,7 @@ class DatabaseCodeGen extends Codegen{
 		$this->strRelationshipsScriptFormat = Codegen::LookupSetting($objSettingsXml, 'relationshipsScript', 'format');
 
 		// Column Comment for MetaControlLabel setting.
-		$this->strCommentMetaControlLabelDelimiter = Codegen::LookupSetting($objSettingsXml, 'columnCommentForMetaControl', 'delimiter');
+		//$this->strCommentMetaControlLabelDelimiter = Codegen::LookupSetting($objSettingsXml, 'columnCommentForMetaControl', 'delimiter');
 
 		// Aggregate RelationshipLinesApp and RelationshipLinesSql arrays
 		if ($this->strRelationships) {
@@ -129,7 +182,7 @@ class DatabaseCodeGen extends Codegen{
 				}
 			}
 		}
-		
+
 		if ($this->strRelationshipsScriptPath) {
 			if (!file_exists($this->strRelationshipsScriptPath)){
 				$this->strErrors .= sprintf("CodeGen Settings XML Fatal Error: relationshipsScript filepath \"%s\" does not exist\r\n", $this->strRelationshipsScriptPath);
@@ -208,14 +261,22 @@ class DatabaseCodeGen extends Codegen{
 
 		$this->AnalyzeDatabase();
 	}
-	
+
+	/**
+	 * Analyze the Database
+	 */
 	protected function AnalyzeDatabase() {
 		// Set aside the Database object
 		if (array_key_exists($this->intDatabaseIndex, Core::$Database)){
 			$this->objDb = Core::$Database[$this->intDatabaseIndex];
 		}
+		// @todo You are here...
 	}
 
+	/**
+	 * Generate Aggregate Helper
+	 * @param Codegen[] $objCodeGenArray Array of Codegen objects.
+	 */
 	public static function GenerateAggregateHelper($objCodeGenArray) {
 		$strToReturn = array();
 
@@ -258,11 +319,12 @@ class DatabaseCodeGen extends Codegen{
 
 		return $strToReturn;
 	}
+
 	/**
 	 * Override method to perform a property "Get"
 	 * This will get the value of $strName
 	 *
-	 * @param string strName Name of the property to get
+	 * @param string $strName Name of the property to get.
 	 * @return mixed
 	 */
 	public function __get($strName) {
@@ -273,12 +335,12 @@ class DatabaseCodeGen extends Codegen{
 			   return $this->objTypeTableArray;
 		   case 'DatabaseIndex':
 			   return $this->intDatabaseIndex;
-		   case 'CommentMetaControlLabelDelimiter':
-			   return $this->strCommentMetaControlLabelDelimiter;
+//		   case 'CommentMetaControlLabelDelimiter':
+//			   return $this->strCommentMetaControlLabelDelimiter;
 		   default:
 			   try {
 				   return parent::__get($strName);
-			   } catch (QCallerException $objExc) {
+			   } catch (Exception $objExc) {
 				   $objExc->IncrementOffset();
 				   throw $objExc;
 			   }
