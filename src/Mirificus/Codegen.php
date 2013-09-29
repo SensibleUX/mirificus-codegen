@@ -422,6 +422,46 @@ abstract class Codegen
     }
 
     /**
+     * Evaluate PHP.
+     * @param string $strFilename
+     * @param string $strModuleName
+     * @param array $mixArgumentArray
+     * @return string The evaluated PHP.
+     */
+    protected function EvaluatePHP($strFilename, $strModuleName, $mixArgumentArray)
+    {
+        // Get all the arguments and set them locally
+        if ($mixArgumentArray) {
+            foreach ($mixArgumentArray as $strName=>$mixValue) {
+                $$strName = $mixValue;
+            }
+        }
+
+        // Of course, we also need to locally allow "objCodeGen"
+        $objCodeGen = $this;
+
+        // Get Database Escape Identifiers
+        $strEscapeIdentifierBegin = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierBegin;
+        $strEscapeIdentifierEnd = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierEnd;
+
+        // Store the Output Buffer locally
+        $strAlreadyRendered = ob_get_contents();
+
+        if (ob_get_level()) { ob_clean(); }
+        ob_start();
+        include($strFilename);
+        $strTemplate = ob_get_contents();
+        ob_end_clean();
+
+        // Restore the output buffer and return evaluated template
+        print($strAlreadyRendered);
+
+        // Remove all \r from the template (for Win/*nix compatibility)
+        $strTemplate = str_replace("\r", '', $strTemplate);
+        return $strTemplate;
+    }
+
+    /**
      * Pluralizes field names.
      * @param string $strName The non-pluralized field name.
      * @return string The pluralized field name.
