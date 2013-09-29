@@ -303,9 +303,9 @@ abstract class Codegen {
 	public function GenerateFile($strModuleName, $strFilename, $blnOverrideFlag, $mixArgumentArray, $blnSave = true) {
 		// Figure out the actual TemplateFilePath
 		if ($blnOverrideFlag) {
-			$strTemplateFilePath = static::TemplatesPathCustom . $strModuleName . '/' . $strFilename;
+			$strTemplateFilePath = __DIR__ . static::TemplatesPathCustom . $strModuleName . '/' . $strFilename;
 		} else {
-			$strTemplateFilePath = static::TemplatesPath . $strModuleName . '/' . $strFilename;
+			$strTemplateFilePath = __DIR__ . static::TemplatesPath . $strModuleName . '/' . $strFilename;
 		}
 		// Setup Debug/Exception Message
 		if (static::DebugMode) { echo "Evaluating $strTemplateFilePath\r\n"; }
