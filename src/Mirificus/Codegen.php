@@ -350,7 +350,7 @@ abstract class Codegen
             if ($strSearchPath != get_include_path()) {
                 throw new CallerException('Can\'t override include path. Make sure your apache or server settings allow include paths to be overriden. ');
             }
-            $strTemplate = $this->EvaluatePHP($strTemplateFilePath, $strModuleName, $mixArgumentArray);
+            $strTemplate = $this->EvaluatePHP($strTemplateFilePath, $mixArgumentArray);
             restore_include_path();
         } else {
             $strTemplate = $this->EvaluateTemplate($strTemplate, $strModuleName, $mixArgumentArray);
@@ -423,16 +423,15 @@ abstract class Codegen
 
     /**
      * Evaluate PHP.
-     * @param string $strFilename
-     * @param string $strModuleName
-     * @param array $mixArgumentArray
-     * @return string The evaluated PHP.
+     * @param string $strFilename The name of the file being evaluated.
+     * @param array $mixArgumentArray An Array of arguments.
+     * @return string The evaluated template.
      */
-    protected function EvaluatePHP($strFilename, $strModuleName, $mixArgumentArray)
+    protected function EvaluatePHP($strFilename, $mixArgumentArray)
     {
         // Get all the arguments and set them locally
         if ($mixArgumentArray) {
-            foreach ($mixArgumentArray as $strName=>$mixValue) {
+            foreach ($mixArgumentArray as $strName => $mixValue) {
                 $$strName = $mixValue;
             }
         }
@@ -447,7 +446,9 @@ abstract class Codegen
         // Store the Output Buffer locally
         $strAlreadyRendered = ob_get_contents();
 
-        if (ob_get_level()) { ob_clean(); }
+        if (ob_get_level()) {
+            ob_clean();
+        }
         ob_start();
         include($strFilename);
         $strTemplate = ob_get_contents();
@@ -457,7 +458,7 @@ abstract class Codegen
         print($strAlreadyRendered);
 
         // Remove all \r from the template (for Win/*nix compatibility)
-        $strTemplate = str_replace("\r", '', $strTemplate);
+        $strTemplate = str_replace("\r", "", $strTemplate);
         return $strTemplate;
     }
 
