@@ -69,12 +69,12 @@ abstract class Codegen {
 	 */
 	protected static $ApplicationName;
 
-	// Relative Paths to the CORE Template and Subtemplate Directories
-	const TemplatesPath = '/codegen/templates/';
+	// Relative Paths to the default Template and Subtemplate Directories
+	const TemplatesPath = 'codegen/templates/';
 //	const SubTemplatesPath = '/codegen/subtemplates/';
 
-	// Relative Paths (from __QCUBED__) to the CUSTOM Template and Subtemplate Directories
-	const TemplatesPathCustom = '/codegen/templates/';
+	// Relative Paths to the CUSTOM Template and Subtemplate Directories
+	const TemplatesPathCustom = 'codegen/templates/';
 
 	const DebugMode = false;
 
@@ -350,11 +350,11 @@ abstract class Codegen {
 		if (is_null($objTemplateXml) || (!($objTemplateXml instanceof SimpleXMLElement))) {
 			throw new \Exception($strError);
 		}
-		$blnOverwriteFlag = QType::Cast($objTemplateXml['OverwriteFlag'], QType::Boolean);
-		$blnDocrootFlag = QType::Cast($objTemplateXml['DocrootFlag'], QType::Boolean);
-		$strTargetDirectory = QType::Cast($objTemplateXml['TargetDirectory'], QType::String);
-		$strDirectorySuffix = QType::Cast($objTemplateXml['DirectorySuffix'], QType::String);
-		$strTargetFileName = QType::Cast($objTemplateXml['TargetFileName'], QType::String);
+		$blnOverwriteFlag = Type::Cast($objTemplateXml['OverwriteFlag'], QType::Boolean);
+		$blnDocrootFlag = Type::Cast($objTemplateXml['DocrootFlag'], QType::Boolean);
+		$strTargetDirectory = Type::Cast($objTemplateXml['TargetDirectory'], QType::String);
+		$strDirectorySuffix = Type::Cast($objTemplateXml['DirectorySuffix'], QType::String);
+		$strTargetFileName = Type::Cast($objTemplateXml['TargetFileName'], QType::String);
 
 		if (is_null($blnOverwriteFlag) || is_null($strTargetFileName) || is_null($strTargetDirectory) || is_null($strDirectorySuffix) || is_null($blnDocrootFlag)) {
 			throw new \Exception($strError);
