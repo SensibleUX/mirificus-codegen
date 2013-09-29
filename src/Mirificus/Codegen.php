@@ -76,6 +76,8 @@ abstract class Codegen {
 	// Relative Paths (from __QCUBED__) to the CUSTOM Template and Subtemplate Directories
 	const TemplatesPathCustom = '/codegen/templates/';
 
+	const DebugMode = false;
+
 	/**
 	 * Array of directories to be excluded in codegen (lower cased)
 	 * @var string[]
@@ -198,10 +200,12 @@ abstract class Codegen {
 	   $objRestServiceCodeGen = array();
 
 	   foreach (static::$CodeGenArray as $objCodeGen) {
-		   if ($objCodeGen instanceof DatabaseCodeGen)
+			if ($objCodeGen instanceof DatabaseCodeGen) {
 			   array_push($objDbOrmCodeGen, $objCodeGen);
-		   if ($objCodeGen instanceof RestServiceCodeGen)
+			}
+			if ($objCodeGen instanceof RestServiceCodeGen) {
 			   array_push($objRestServiceCodeGen, $objCodeGen);
+			}
 	   }
 
 	   $strToReturn = array();
@@ -284,6 +288,112 @@ abstract class Codegen {
 				   $blnSuccess = false;
 
 	   return $blnSuccess;
+	}
+
+	/**
+	 * Generate a single file from the data source
+	 *
+	 * @param string $strModuleName
+	 * @param string $strFilename
+	 * @param boolean $blnOverrideFlag Whether we are using the _core template, or using a custom one.
+	 * @param mixed[] $mixArgumentArray
+	 * @param boolean $blnSave Whether or not to actually perform the save.
+	 * @return mixed The evaluated template or boolean save success.
+	 */
+	public function GenerateFile($strModuleName, $strFilename, $blnOverrideFlag, $mixArgumentArray, $blnSave = true) {
+		// Figure out the actual TemplateFilePath
+		if ($blnOverrideFlag) {
+			$strTemplateFilePath = static::TemplatesPathCustom . $strModuleName . '/' . $strFilename;
+		} else {
+			$strTemplateFilePath = static::TemplatesPath . $strModuleName . '/' . $strFilename;
+		}
+		// Setup Debug/Exception Message
+		if (static::DebugMode) { echo "Evaluating $strTemplateFilePath\r\n"; }
+		$strError = 'Template\'s first line must be <template OverwriteFlag="boolean" DocrootFlag="boolean" TargetDirectory="string" DirectorySuffix="string" TargetFileName="string"/>: ' . $strTemplateFilePath;
+
+		// Check to see if the template file exists, and if it does, Load It
+		if (!file_exists($strTemplateFilePath)) {
+			throw new CallerException('Template File Not Found: ' . $strTemplateFilePath);
+		}
+		$strTemplate = file_get_contents($strTemplateFilePath);
+
+		// Evaluate the Template
+		if (substr($strFilename, strlen($strFilename) - 8) == '.tpl.php')  {
+			// make sure paths are set up to pick up included files from both the override directory and _core directory
+			$strSearchPath = static::TemplatesPathCustom . $strModuleName . PATH_SEPARATOR .
+					static::TemplatesPath . $strModuleName . PATH_SEPARATOR .
+					get_include_path();
+			set_include_path ($strSearchPath);
+			if ($strSearchPath != get_include_path()) {
+				throw new CallerException('Can\'t override include path. Make sure your apache or server settings allow include paths to be overriden. ' );
+			}
+			$strTemplate = $this->EvaluatePHP($strTemplateFilePath, $strModuleName, $mixArgumentArray);
+			restore_include_path();
+		} else {
+			$strTemplate = $this->EvaluateTemplate($strTemplate, $strModuleName, $mixArgumentArray);
+		}
+
+		// Parse out the first line (which contains path and overwriting information)
+		$intPosition = strpos($strTemplate, "\n");
+		if ($intPosition === false) {
+			throw new \Exception($strError);
+		}
+		$strFirstLine = trim(substr($strTemplate, 0, $intPosition));
+		$strTemplate = substr($strTemplate, $intPosition + 1);
+
+		$objTemplateXml = null;
+		// Attempt to Parse the First Line as XML
+		try {
+			@$objTemplateXml = new SimpleXMLElement($strFirstLine);
+		} catch (\Exception $objExc) {}
+
+		if (is_null($objTemplateXml) || (!($objTemplateXml instanceof SimpleXMLElement))) {
+			throw new \Exception($strError);
+		}
+		$blnOverwriteFlag = QType::Cast($objTemplateXml['OverwriteFlag'], QType::Boolean);
+		$blnDocrootFlag = QType::Cast($objTemplateXml['DocrootFlag'], QType::Boolean);
+		$strTargetDirectory = QType::Cast($objTemplateXml['TargetDirectory'], QType::String);
+		$strDirectorySuffix = QType::Cast($objTemplateXml['DirectorySuffix'], QType::String);
+		$strTargetFileName = QType::Cast($objTemplateXml['TargetFileName'], QType::String);
+
+		if (is_null($blnOverwriteFlag) || is_null($strTargetFileName) || is_null($strTargetDirectory) || is_null($strDirectorySuffix) || is_null($blnDocrootFlag)) {
+			throw new \Exception($strError);
+		}
+		if ($blnSave && $strTargetDirectory) {
+			// Figure out the REAL target directory
+			if ($blnDocrootFlag) {
+				$strTargetDirectory = __DOCROOT__ . $strTargetDirectory . $strDirectorySuffix;
+			} else {
+				$strTargetDirectory = $strTargetDirectory . $strDirectorySuffix;
+			}
+			// Create Directory (if needed)
+			if (!is_dir($strTargetDirectory)) {
+				if (!Core::MakeDirectory($strTargetDirectory, 0777)) {
+					throw new \Exception('Unable to mkdir ' . $strTargetDirectory);
+				}
+			}
+			// Save to Disk
+			$strFilePath = sprintf('%s/%s', $strTargetDirectory, $strTargetFileName);
+			if ($blnOverwriteFlag || (!file_exists($strFilePath))) {
+				$intBytesSaved = file_put_contents($strFilePath, $strTemplate);
+
+				$this->setGeneratedFilePermissions($strFilePath);
+				return ($intBytesSaved == strlen($strTemplate));
+			} else {
+				// Because we are not supposed to overwrite, we should return "true" by default
+				return true;
+			}
+		}
+
+		// Why Did We Not Save?
+		if ($blnSave) {
+			// We WANT to Save, but QCubed Configuration says that this functionality/feature should no longer be generated
+			// By definition, we should return "true"
+			return true;
+		} else {
+			// Running GenerateFile() specifically asking it not to save -- so return the evaluated template instead
+			return $strTemplate;
+		}
 	}
 
 	/**
