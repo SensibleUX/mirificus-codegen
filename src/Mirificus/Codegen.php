@@ -70,11 +70,11 @@ abstract class Codegen {
 	protected static $ApplicationName;
 
 	// Relative Paths to the default Template and Subtemplate Directories
-	const TemplatesPath = 'codegen/templates/';
+	const TemplatesPath = '/codegen/templates/';
 //	const SubTemplatesPath = '/codegen/subtemplates/';
 
 	// Relative Paths to the CUSTOM Template and Subtemplate Directories
-	const TemplatesPathCustom = 'codegen/templates/';
+	const TemplatesPathCustom = '/codegen/templates/';
 
 	const DebugMode = false;
 
@@ -280,7 +280,7 @@ abstract class Codegen {
 		   }
 	   }
 
-	   // Finally, iterate through all the TempalteFiles and call GenerateFile to Evaluate/Generate/Save them
+	   // Finally, iterate through all the template files and call GenerateFile to Evaluate/Generate/Save them.
 	   $blnSuccess = true;
 	   foreach ($strTemplateArray as $strModuleName => $strFileArray)
 		   foreach ($strFileArray as $strFilename => $blnOverrideFlag)
