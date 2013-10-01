@@ -162,11 +162,9 @@ abstract class Codegen
      * @return mixed the return type depends on the Type you pass in to $strType
      */
     protected static function LookupSetting(
-        $objNode,
-        $strTagName,
-        $strAttributeName = null,
-        $strType = Type::String
-    ) {
+    $objNode, $strTagName, $strAttributeName = null, $strType = Type::String
+    )
+    {
         if ($strTagName) {
             $objNode = $objNode->$strTagName;
         }
@@ -316,12 +314,9 @@ abstract class Codegen
      * @return mixed The evaluated template or boolean save success.
      */
     public function GenerateFile(
-        $strModuleName,
-        $strFilename,
-        $blnOverrideFlag,
-        $mixArgumentArray,
-        $blnSave = true
-    ) {
+    $strModuleName, $strFilename, $blnOverrideFlag, $mixArgumentArray, $blnSave = true
+    )
+    {
         // Figure out the actual TemplateFilePath
         if ($blnOverrideFlag) {
             $strTemplateFilePath = __DIR__ . static::TemplatesPathCustom . $strModuleName . '/' . $strFilename;
@@ -369,7 +364,7 @@ abstract class Codegen
         try {
             @$objTemplateXml = new SimpleXMLElement($strFirstLine);
         } catch (\Exception $objExc) {
-
+            
         }
 
         if (is_null($objTemplateXml) || (!($objTemplateXml instanceof SimpleXMLElement))) {
@@ -456,8 +451,7 @@ abstract class Codegen
             $intPositionEnd = strpos($strTemplate, static::$TemplateEscapeEnd, $intPosition);
 
             // Get and cleanup the Eval Statement
-            $strStatement = substr($strTemplate, $intPosition + static::$TemplateEscapeBeginLength,
-                                    $intPositionEnd - $intPosition - static::$TemplateEscapeEndLength);
+            $strStatement = substr($strTemplate, $intPosition + static::$TemplateEscapeBeginLength, $intPositionEnd - $intPosition - static::$TemplateEscapeEndLength);
             $strStatement = trim($strStatement);
 
             if (substr($strStatement, 0, 1) == '=') {
@@ -507,7 +501,7 @@ abstract class Codegen
 
                 // Ensure each variable exists!
                 foreach ($strVariableArray as $strVariable) {
-                    if(!isset($$strVariable)) {
+                    if (!isset($$strVariable)) {
                         throw new \Exception(sprintf('Invalid Variable %s in include subtemplate command: %s', $strVariable, $strStatement));
                     }
                 }
@@ -530,10 +524,9 @@ abstract class Codegen
                 $intPosition = $intPosition - strlen($strStatement);
                 $strStatement = '';
 
-            // Check if we're starting an open-ended statement
+                // Check if we're starting an open-ended statement
             } elseif (substr($strStatement, strlen($strStatement) - 1) == '{') {
                 // We ARE in an open-ended statement
-
                 // SubTemplate is the contents of this open-ended template
                 $strSubTemplate = substr($strTemplate, $intPositionEnd + static::$TemplateEscapeEndLength);
 
@@ -544,8 +537,7 @@ abstract class Codegen
                 $intSubPosition = strpos($strSubTemplate, static::$TemplateEscapeBegin);
                 while (($intLevel > 0) && ($intSubPosition !== false)) {
                     $intSubPositionEnd = strpos($strSubTemplate, static::$TemplateEscapeEnd, $intSubPosition);
-                    $strFragment = substr($strSubTemplate, $intSubPosition + static::$TemplateEscapeEndLength,
-                        $intSubPositionEnd - $intSubPosition - static::$TemplateEscapeEndLength);
+                    $strFragment = substr($strSubTemplate, $intSubPosition + static::$TemplateEscapeEndLength, $intSubPositionEnd - $intSubPosition - static::$TemplateEscapeEndLength);
                     $strFragment = trim($strFragment);
 
                     $strFragmentLastCharacter = substr($strFragment, strlen($strFragment) - 1);
@@ -562,7 +554,7 @@ abstract class Codegen
                 }
                 if ($intLevel != 0) {
                     throw new \Exception("Improperly Terminated OpenEnded Command following; $strStatement");
-				}
+                }
                 $strSubTemplate = substr($strSubTemplate, 0, $intSubPosition);
 
                 // Remove First Carriage Return (if applicable)
@@ -600,7 +592,7 @@ abstract class Codegen
 
                         // Ensure that we've got a "(" and a ")"
                         if ((String::FirstCharacter($strStatement) != '(') ||
-                            (String::LastCharacter($strStatement) != ')')) {
+                                (String::LastCharacter($strStatement) != ')')) {
                             throw new \Exception("Improperly Formatted foreach: $strFullStatement");
                         }
                         $strStatement = trim(substr($strStatement, 1, strlen($strStatement) - 2));
@@ -626,26 +618,27 @@ abstract class Codegen
                             // Iterate to setup strStatement
                             $strStatement = '';
                             if ($objArray) {
-								foreach ($objArray as $$strSingleObjectKey => $$strSingleObjectValue) {
-									$mixArgumentArray[$strSingleObjectKey] = $$strSingleObjectKey;
-									$mixArgumentArray[$strSingleObjectValue] = $$strSingleObjectValue;
+                                foreach ($objArray as $$strSingleObjectKey => $$strSingleObjectValue) {
+                                    $mixArgumentArray[$strSingleObjectKey] = $$strSingleObjectKey;
+                                    $mixArgumentArray[$strSingleObjectValue] = $$strSingleObjectValue;
 
-									$strStatement .= $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
-									$mixArgumentArray['_INDEX']++;
-								}
-							}
+                                    $strStatement .= $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
+                                    $mixArgumentArray['_INDEX']++;
+                                }
+                            }
                         } else {
                             // Remove leading '$'
                             $strSingleObjectName = substr($strSingleObjectName, 1);
 
                             // Iterate to setup strStatement
                             $strStatement = '';
-                            if ($objArray) foreach ($objArray as $$strSingleObjectName) {
-                                $mixArgumentArray[$strSingleObjectName] = $$strSingleObjectName;
+                            if ($objArray)
+                                foreach ($objArray as $$strSingleObjectName) {
+                                    $mixArgumentArray[$strSingleObjectName] = $$strSingleObjectName;
 
-                                $strStatement .= $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
-                                $mixArgumentArray['_INDEX']++;
-                            }
+                                    $strStatement .= $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
+                                    $mixArgumentArray['_INDEX']++;
+                                }
                         }
                         break;
 
@@ -661,7 +654,7 @@ abstract class Codegen
                             $strStatement = $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
                         } else {
                             $strStatement = '';
-						}
+                        }
                         break;
 
                     default:
@@ -707,7 +700,7 @@ abstract class Codegen
                     $intCrPosition--;
                 } else {
                     $intCrLength = 0;
-				}
+                }
                 $strFragment = substr($strTemplate, $intCrPosition, $intPosition - $intCrPosition);
 
                 if (trim($strFragment) == '') {
@@ -719,9 +712,9 @@ abstract class Codegen
                 if (is_null($strStatement)) {
                     $strStatement = $strEvaledStatement;
                 } else {
-					if (static::DebugMode) {
-						echo "Evalling: $strStatement";
-					}
+                    if (static::DebugMode) {
+                        echo "Evalling: $strStatement";
+                    }
                     // Perform the Eval
                     $strStatement = eval($strStatement);
                 }
@@ -778,4 +771,5 @@ abstract class Codegen
                 return $strName . "s";
         }
     }
+
 }
