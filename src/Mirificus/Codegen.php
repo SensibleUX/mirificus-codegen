@@ -14,7 +14,7 @@ abstract class Codegen
 
     /**
      * This static array contains an array of active and executed codegen objects, based
-     * on the XML Configuration passed in to Mirificus\Codegen::Run().
+     * on the XML Configuration passed in to Mirificus\static::Run().
      * @var CodeGen[] Array of active/executed codegen objects.
      * @static
      */
@@ -216,15 +216,15 @@ abstract class Codegen
         }
 
         $strToReturn = array();
-        array_merge($strToReturn, DatabaseCodeGen::GenerateAggregateHelper($objDbOrmCodeGen));
-        //			array_push($strToReturn, QRestServiceCodeGen::GenerateAggregateHelper($objRestServiceCodeGen));
+        array_merge($strToReturn, Databasestatic::GenerateAggregateHelper($objDbOrmCodeGen));
+        //			array_push($strToReturn, QRestServicestatic::GenerateAggregateHelper($objRestServiceCodeGen));
 
         return $strToReturn;
     }
 
     /**
      * Given a template prefix (e.g. db_orm_, db_type_, rest_, soap_, etc.), pull
-     * all the _*.tpl templates from any subfolders of the template prefix in Mirificus\CodeGen::TemplatesPath and Mirificus\CodeGen::TemplatesPathCustom,
+     * all the _*.tpl templates from any subfolders of the template prefix in Mirificus\static::TemplatesPath and Mirificus\static::TemplatesPathCustom,
      * and call GenerateFile() on each one.  If there are any template files that reside
      * in BOTH TemplatesPath AND TemplatesPathCustom, then only use the TemplatesPathCustom one (which
      * in essence overrides the one in TemplatesPath).
@@ -238,11 +238,11 @@ abstract class Codegen
         // Make sure both our Template and TemplateCustom paths are valid
         $strTemplatePath = sprintf('%s%s%s', __DIR__, static::TemplatesPath, $strTemplatePrefix);
         if (!is_dir($strTemplatePath)) {
-            throw new \Exception(sprintf("CodeGen::TemplatesPath does not appear to be a valid directory:\r\n%s", $strTemplatePath));
+            throw new \Exception(sprintf("static::TemplatesPath does not appear to be a valid directory:\r\n%s", $strTemplatePath));
         }
         $strTemplatePathCustom = sprintf('%s%s', __DIR__, static::TemplatesPathCustom);
         if (!is_dir($strTemplatePathCustom)) {
-            throw new \Exception(sprintf("CodeGen::TemplatesPathCustom does not appear to be a valid directory:\r\n%s", $strTemplatePathCustom));
+            throw new \Exception(sprintf("static::TemplatesPathCustom does not appear to be a valid directory:\r\n%s", $strTemplatePathCustom));
         }
         $strTemplatePathCustom .= $strTemplatePrefix;
 
@@ -445,7 +445,7 @@ abstract class Codegen
         $objCodeGen = $this;
 
         // Look for the Escape Begin
-        $intPosition = strpos($strTemplate, CodeGen::$TemplateEscapeBegin);
+        $intPosition = strpos($strTemplate, static::$TemplateEscapeBegin);
 
         // Get Database Escape Identifiers
         $strEscapeIdentifierBegin = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierBegin;
@@ -453,11 +453,11 @@ abstract class Codegen
 
         // Evaluate All Escaped Clauses
         while ($intPosition !== false) {
-            $intPositionEnd = strpos($strTemplate, CodeGen::$TemplateEscapeEnd, $intPosition);
+            $intPositionEnd = strpos($strTemplate, static::$TemplateEscapeEnd, $intPosition);
 
             // Get and cleanup the Eval Statement
-            $strStatement = substr($strTemplate, $intPosition + CodeGen::$TemplateEscapeBeginLength,
-                                    $intPositionEnd - $intPosition - CodeGen::$TemplateEscapeEndLength);
+            $strStatement = substr($strTemplate, $intPosition + static::$TemplateEscapeBeginLength,
+                                    $intPositionEnd - $intPosition - static::$TemplateEscapeEndLength);
             $strStatement = trim($strStatement);
 
             if (substr($strStatement, 0, 1) == '=') {
@@ -535,17 +535,17 @@ abstract class Codegen
                 // We ARE in an open-ended statement
 
                 // SubTemplate is the contents of this open-ended template
-                $strSubTemplate = substr($strTemplate, $intPositionEnd + CodeGen::$TemplateEscapeEndLength);
+                $strSubTemplate = substr($strTemplate, $intPositionEnd + static::$TemplateEscapeEndLength);
 
                 // Parse through the rest of the template, and pull the correct SubTemplate,
                 // Keeping in account nested open-ended statements
                 $intLevel = 1;
 
-                $intSubPosition = strpos($strSubTemplate, CodeGen::$TemplateEscapeBegin);
+                $intSubPosition = strpos($strSubTemplate, static::$TemplateEscapeBegin);
                 while (($intLevel > 0) && ($intSubPosition !== false)) {
-                    $intSubPositionEnd = strpos($strSubTemplate, CodeGen::$TemplateEscapeEnd, $intSubPosition);
-                    $strFragment = substr($strSubTemplate, $intSubPosition + CodeGen::$TemplateEscapeEndLength,
-                        $intSubPositionEnd - $intSubPosition - CodeGen::$TemplateEscapeEndLength);
+                    $intSubPositionEnd = strpos($strSubTemplate, static::$TemplateEscapeEnd, $intSubPosition);
+                    $strFragment = substr($strSubTemplate, $intSubPosition + static::$TemplateEscapeEndLength,
+                        $intSubPositionEnd - $intSubPosition - static::$TemplateEscapeEndLength);
                     $strFragment = trim($strFragment);
 
                     $strFragmentLastCharacter = substr($strFragment, strlen($strFragment) - 1);
@@ -557,7 +557,7 @@ abstract class Codegen
                     }
 
                     if ($intLevel) {
-                        $intSubPosition = strpos($strSubTemplate, CodeGen::$TemplateEscapeBegin, $intSubPositionEnd);
+                        $intSubPosition = strpos($strSubTemplate, static::$TemplateEscapeBegin, $intSubPositionEnd);
                     }
                 }
                 if ($intLevel != 0)
@@ -656,45 +656,41 @@ abstract class Codegen
                         $strStatement = substr($strStatement, 0, strlen($strStatement) - 1);
                         $strStatement = trim($strStatement);
 
-
                         if (eval(sprintf('return (%s);', $strStatement))) {
                             $strStatement = $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
-                        } else
+                        } else {
                             $strStatement = '';
-
+						}
                         break;
                     default:
                         throw new \Exception("Invalid OpenEnded Command: $strStatement");
                 }
 
-                // Reclculate intPositionEnd
-                $intPositionEnd = $intPositionEnd + QCodeGen::$TemplateEscapeEndLength + $intSubPositionEnd;
+                // Recalculate intPositionEnd
+                $intPositionEnd = $intPositionEnd + static::$TemplateEscapeEndLength + $intSubPositionEnd;
 
                 // If nothing but whitespace between $intPositionEnd and the next CR, then remove the CR
-                $intCrPosition = strpos($strTemplate, "\n", $intPositionEnd + QCodeGen::$TemplateEscapeEndLength);
+                $intCrPosition = strpos($strTemplate, "\n", $intPositionEnd + static::$TemplateEscapeEndLength);
                 if ($intCrPosition !== false) {
-                    $strFragment = substr($strTemplate, $intPositionEnd + QCodeGen::$TemplateEscapeEndLength, $intCrPosition - ($intPositionEnd + QCodeGen::$TemplateEscapeEndLength));
+                    $strFragment = substr($strTemplate, $intPositionEnd + static::$TemplateEscapeEndLength, $intCrPosition - ($intPositionEnd + static::$TemplateEscapeEndLength));
                     if (trim($strFragment == '')) {
                         // Nothing exists after the escapeend and the next CR
                         // Go ahead and chop it off
-                        $intPositionEnd = $intCrPosition - QCodeGen::$TemplateEscapeEndLength + 1;
+                        $intPositionEnd = $intCrPosition - static::$TemplateEscapeEndLength + 1;
                     }
                 } else {
-                    $strFragment = substr($strTemplate, $intPositionEnd + QCodeGen::$TemplateEscapeEndLength);
+                    $strFragment = substr($strTemplate, $intPositionEnd + static::$TemplateEscapeEndLength);
                     if (trim($strFragment == '')) {
-                        // Nothing exists after the escapeend and the end
+                        // Nothing exists after the escapeEnd and the end
                         // Go ahead and chop it off
                         $intPositionEnd = strlen($strTemplate);
                     }
                 }
 
-
-
                 // Recalcualte intPosition
                 // If nothing but whitespace between $intPosition and the previous CR, then remove the Whitespace (keep the CR)
                 $strFragment = substr($strTemplate, 0, $intPosition);
                 $intCrPosition = strrpos($strFragment, "\n");
-
 
                 if ($intCrPosition !== false) {
                     $intLfLength = 1;
@@ -717,20 +713,20 @@ abstract class Codegen
                     $intPosition = $intCrPosition + $intLfLength + $intCrLength;
                 }
             } else {
-                if (is_null($strStatement))
+                if (is_null($strStatement)) {
                     $strStatement = $strEvaledStatement;
-                else {
-                    if (QCodeGen::DebugMode) _p("Evalling: $strStatement<br/>", false);
+                } else {
+                    if (static::DebugMode) _p("Evalling: $strStatement<br/>", false);
                     // Perform the Eval
                     $strStatement = eval($strStatement);
                 }
             }
 
             // Do the Replace
-            $strTemplate = substr($strTemplate, 0, $intPosition) . $strStatement . substr($strTemplate, $intPositionEnd + QCodeGen::$TemplateEscapeEndLength);
+            $strTemplate = substr($strTemplate, 0, $intPosition) . $strStatement . substr($strTemplate, $intPositionEnd + static::$TemplateEscapeEndLength);
 
             // GO to the next Escape Marker (if applicable)
-            $intPosition = strpos($strTemplate, QCodeGen::$TemplateEscapeBegin);
+            $intPosition = strpos($strTemplate, static::$TemplateEscapeBegin);
         }
         return $strTemplate;
     }
