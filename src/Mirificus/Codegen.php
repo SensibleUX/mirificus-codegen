@@ -369,7 +369,7 @@ abstract class Codegen
         try {
             @$objTemplateXml = new SimpleXMLElement($strFirstLine);
         } catch (\Exception $objExc) {
-            
+
         }
 
         if (is_null($objTemplateXml) || (!($objTemplateXml instanceof SimpleXMLElement))) {
@@ -419,6 +419,320 @@ abstract class Codegen
             // Running GenerateFile() specifically asking it not to save -- so return the evaluated template instead
             return $strTemplate;
         }
+    }
+
+    /**
+     * Evaluate Codegen Template
+     * @param string $strTemplate The template string to evaluate.
+     * @param string $strModuleName The module to use for evaluation.
+     * @param array $mixArgumentArray An array of arguments that will be set to local variables.
+     * @return string The evaluated template.
+     * @throws Exception
+     */
+    protected function EvaluateTemplate($strTemplate, $strModuleName, $mixArgumentArray)
+    {
+        // First remove all \r from the template (for Win/*nix compatibility)
+        $strTemplate = str_replace("\r", '', $strTemplate);
+
+        // Get all the arguments and set them locally
+        if ($mixArgumentArray) {
+            foreach ($mixArgumentArray as $strName => $mixValue) {
+                $$strName = $mixValue;
+            }
+        }
+
+        // Of course, we also need to locally allow "objCodeGen"
+        $objCodeGen = $this;
+
+        // Look for the Escape Begin
+        $intPosition = strpos($strTemplate, CodeGen::$TemplateEscapeBegin);
+
+        // Get Database Escape Identifiers
+        $strEscapeIdentifierBegin = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierBegin;
+        $strEscapeIdentifierEnd = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierEnd;
+
+        // Evaluate All Escaped Clauses
+        while ($intPosition !== false) {
+            $intPositionEnd = strpos($strTemplate, CodeGen::$TemplateEscapeEnd, $intPosition);
+
+            // Get and cleanup the Eval Statement
+            $strStatement = substr($strTemplate, $intPosition + CodeGen::$TemplateEscapeBeginLength,
+                                    $intPositionEnd - $intPosition - CodeGen::$TemplateEscapeEndLength);
+            $strStatement = trim($strStatement);
+
+            if (substr($strStatement, 0, 1) == '=') {
+                // Remove Trailing ';' if applicable
+                if (substr($strStatement, strlen($strStatement) - 1) == ';') {
+                    $strStatement = trim(substr($strStatement, 0, strlen($strStatement) - 1));
+                }
+                // Remove Head '='
+                $strStatement = trim(substr($strStatement, 1));
+
+                // Add 'return' eval
+                $strStatement = sprintf('return (%s);', $strStatement);
+            } else if (substr($strStatement, 0, 1) == '@') {
+                // Remove Trailing ';' if applicable
+                if (substr($strStatement, strlen($strStatement) - 1) == ';') {
+                    $strStatement = trim(substr($strStatement, 0, strlen($strStatement) - 1));
+                }
+
+                // Remove Head '@'
+                $strStatement = trim(substr($strStatement, 1));
+
+                // Calculate Template Filename
+                $intVariablePosition = strpos($strStatement, '(');
+
+                if ($intVariablePosition === false) {
+                    throw new \Exception('Invalid include subtemplate Command: ' . $strStatement);
+                }
+                $strTemplateFile = substr($strStatement, 0, $intVariablePosition);
+
+                $strVariableList = substr($strStatement, $intVariablePosition + 1);
+                // Remove trailing ')'
+                $strVariableList = trim(substr($strVariableList, 0, strlen($strVariableList) - 1));
+
+                $strVariableArray = explode(',', $strVariableList);
+
+                // Clean Each Variable
+                for ($intIndex = 0; $intIndex < count($strVariableArray); $intIndex++) {
+                    // Trim
+                    $strVariableArray[$intIndex] = trim($strVariableArray[$intIndex]);
+
+                    // Remove trailing and head "'"
+                    $strVariableArray[$intIndex] = substr($strVariableArray[$intIndex], 1, strlen($strVariableArray[$intIndex]) - 2);
+
+                    // Trim Again
+                    $strVariableArray[$intIndex] = trim($strVariableArray[$intIndex]);
+                }
+
+                // Ensure each variable exists!
+                foreach ($strVariableArray as $strVariable) {
+                    if(!isset($$strVariable)) {
+                        throw new \Exception(sprintf('Invalid Variable %s in include subtemplate command: %s', $strVariable, $strStatement));
+                    }
+                }
+                // Setup the ArgumentArray for this subtemplate
+                $mixTemplateArgumentArray = array();
+                foreach ($strVariableArray as $strVariable) {
+                    $mixTemplateArgumentArray[$strVariable] = $$strVariable;
+                }
+
+                // Get the Evaluated Template!
+                $strEvaledStatement = $this->EvaluateSubTemplate($strTemplateFile . '.tpl', $strModuleName, $mixTemplateArgumentArray);
+
+                // Set Statement to NULL so that the method knows to that the statement we're replacing
+                // has already been eval'ed
+                $strStatement = null;
+            }
+
+            if (substr($strStatement, 0, 1) == '-') {
+                // Backup a number of characters
+                $intPosition = $intPosition - strlen($strStatement);
+                $strStatement = '';
+
+            // Check if we're starting an open-ended statement
+            } else if (substr($strStatement, strlen($strStatement) - 1) == '{') {
+                // We ARE in an open-ended statement
+
+                // SubTemplate is the contents of this open-ended template
+                $strSubTemplate = substr($strTemplate, $intPositionEnd + CodeGen::$TemplateEscapeEndLength);
+
+                // Parse through the rest of the template, and pull the correct SubTemplate,
+                // Keeping in account nested open-ended statements
+                $intLevel = 1;
+
+                $intSubPosition = strpos($strSubTemplate, CodeGen::$TemplateEscapeBegin);
+                while (($intLevel > 0) && ($intSubPosition !== false)) {
+                    $intSubPositionEnd = strpos($strSubTemplate, CodeGen::$TemplateEscapeEnd, $intSubPosition);
+                    $strFragment = substr($strSubTemplate, $intSubPosition + CodeGen::$TemplateEscapeEndLength,
+                        $intSubPositionEnd - $intSubPosition - CodeGen::$TemplateEscapeEndLength);
+                    $strFragment = trim($strFragment);
+
+                    $strFragmentLastCharacter = substr($strFragment, strlen($strFragment) - 1);
+
+                    if ($strFragmentLastCharacter == '{') {
+                        $intLevel++;
+                    } else if ($strFragmentLastCharacter == '}') {
+                        $intLevel--;
+                    }
+
+                    if ($intLevel) {
+                        $intSubPosition = strpos($strSubTemplate, CodeGen::$TemplateEscapeBegin, $intSubPositionEnd);
+                    }
+                }
+                if ($intLevel != 0)
+                    throw new \Exception("Improperly Terminated OpenEnded Command following; $strStatement");
+
+                $strSubTemplate = substr($strSubTemplate, 0, $intSubPosition);
+
+                // Remove First Carriage Return (if applicable)
+                $intCrPosition = strpos($strSubTemplate, "\n");
+                if ($intCrPosition !== false) {
+                    $strFragment = substr($strSubTemplate, 0, $intCrPosition + 1);
+                    if (trim($strFragment) == '') {
+                        // Nothing exists before the first CR
+                        // Go ahead and chop it off
+                        $strSubTemplate = substr($strSubTemplate, $intCrPosition + 1);
+                    }
+                }
+
+                // Remove blank space after the last carriage return (if applicable)
+                $intCrPosition = strrpos($strSubTemplate, "\n");
+                if ($intCrPosition !== false) {
+                    $strFragment = substr($strSubTemplate, $intCrPosition + 1);
+                    if (trim($strFragment) == '') {
+                        // Nothing exists after the last CR
+                        // Go ahead and chop it off
+                        $strSubTemplate = substr($strSubTemplate, 0, $intCrPosition + 1);
+                    }
+                }
+
+                // Figure out the Command and calculate SubTemplate
+                $strCommand = substr($strStatement, 0, strpos($strStatement, ' '));
+                switch ($strCommand) {
+                    case 'foreach':
+                        $strFullStatement = $strStatement;
+
+                        // Remove leading 'foreach' and trailing '{'
+                        $strStatement = substr($strStatement, strlen('foreach'));
+                        $strStatement = substr($strStatement, 0, strlen($strStatement) - 1);
+                        $strStatement = trim($strStatement);
+
+                        // Ensure that we've got a "(" and a ")"
+                        if ((String::FirstCharacter($strStatement) != '(') ||
+                            (String::LastCharacter($strStatement) != ')')) {
+                            throw new \Exception("Improperly Formatted foreach: $strFullStatement");
+                        }
+                        $strStatement = trim(substr($strStatement, 1, strlen($strStatement) - 2));
+
+                        // Pull out the two sides of the "as" clause
+                        $strStatement = explode(' as ', $strStatement);
+                        if (count($strStatement) != 2) {
+                            throw new \Exception("Improperly Formatted foreach: $strFullStatement");
+                        }
+                        $objArray = eval(sprintf('return %s;', trim($strStatement[0])));
+                        $strSingleObjectName = trim($strStatement[1]);
+                        $strNameKeyPair = explode('=>', $strSingleObjectName);
+
+                        $mixArgumentArray['_INDEX'] = 0;
+                        if (count($strNameKeyPair) == 2) {
+                            $strSingleObjectKey = trim($strNameKeyPair[0]);
+                            $strSingleObjectValue = trim($strNameKeyPair[1]);
+
+                            // Remove leading '$'
+                            $strSingleObjectKey = substr($strSingleObjectKey, 1);
+                            $strSingleObjectValue = substr($strSingleObjectValue, 1);
+
+                            // Iterate to setup strStatement
+                            $strStatement = '';
+                            if ($objArray) foreach ($objArray as $$strSingleObjectKey => $$strSingleObjectValue) {
+                                $mixArgumentArray[$strSingleObjectKey] = $$strSingleObjectKey;
+                                $mixArgumentArray[$strSingleObjectValue] = $$strSingleObjectValue;
+
+                                $strStatement .= $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
+                                $mixArgumentArray['_INDEX']++;
+                            }
+                        } else {
+                            // Remove leading '$'
+                            $strSingleObjectName = substr($strSingleObjectName, 1);
+
+                            // Iterate to setup strStatement
+                            $strStatement = '';
+                            if ($objArray) foreach ($objArray as $$strSingleObjectName) {
+                                $mixArgumentArray[$strSingleObjectName] = $$strSingleObjectName;
+
+                                $strStatement .= $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
+                                $mixArgumentArray['_INDEX']++;
+                            }
+                        }
+
+                        break;
+
+                    case 'if':
+                        $strFullStatement = $strStatement;
+
+                        // Remove leading 'if' and trailing '{'
+                        $strStatement = substr($strStatement, strlen('if'));
+                        $strStatement = substr($strStatement, 0, strlen($strStatement) - 1);
+                        $strStatement = trim($strStatement);
+
+
+                        if (eval(sprintf('return (%s);', $strStatement))) {
+                            $strStatement = $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
+                        } else
+                            $strStatement = '';
+
+                        break;
+                    default:
+                        throw new \Exception("Invalid OpenEnded Command: $strStatement");
+                }
+
+                // Reclculate intPositionEnd
+                $intPositionEnd = $intPositionEnd + QCodeGen::$TemplateEscapeEndLength + $intSubPositionEnd;
+
+                // If nothing but whitespace between $intPositionEnd and the next CR, then remove the CR
+                $intCrPosition = strpos($strTemplate, "\n", $intPositionEnd + QCodeGen::$TemplateEscapeEndLength);
+                if ($intCrPosition !== false) {
+                    $strFragment = substr($strTemplate, $intPositionEnd + QCodeGen::$TemplateEscapeEndLength, $intCrPosition - ($intPositionEnd + QCodeGen::$TemplateEscapeEndLength));
+                    if (trim($strFragment == '')) {
+                        // Nothing exists after the escapeend and the next CR
+                        // Go ahead and chop it off
+                        $intPositionEnd = $intCrPosition - QCodeGen::$TemplateEscapeEndLength + 1;
+                    }
+                } else {
+                    $strFragment = substr($strTemplate, $intPositionEnd + QCodeGen::$TemplateEscapeEndLength);
+                    if (trim($strFragment == '')) {
+                        // Nothing exists after the escapeend and the end
+                        // Go ahead and chop it off
+                        $intPositionEnd = strlen($strTemplate);
+                    }
+                }
+
+
+
+                // Recalcualte intPosition
+                // If nothing but whitespace between $intPosition and the previous CR, then remove the Whitespace (keep the CR)
+                $strFragment = substr($strTemplate, 0, $intPosition);
+                $intCrPosition = strrpos($strFragment, "\n");
+
+
+                if ($intCrPosition !== false) {
+                    $intLfLength = 1;
+                } else {
+                    $intLfLength = 0;
+                    $intCrPosition = 0;
+                }
+
+                // Inlcude the previous "\r" if applicable
+                if (($intCrPosition > 1) && (substr($strTemplate, $intCrPosition - 1, 1) == "\r")) {
+                    $intCrLength = 1;
+                    $intCrPosition--;
+                } else
+                    $intCrLength = 0;
+                $strFragment = substr($strTemplate, $intCrPosition, $intPosition - $intCrPosition);
+
+                if (trim($strFragment) == '') {
+                    // Nothing exists before the escapebegin and the previous CR
+                    // Go ahead and chop it off (but not the CR or CR/LF)
+                    $intPosition = $intCrPosition + $intLfLength + $intCrLength;
+                }
+            } else {
+                if (is_null($strStatement))
+                    $strStatement = $strEvaledStatement;
+                else {
+                    if (QCodeGen::DebugMode) _p("Evalling: $strStatement<br/>", false);
+                    // Perform the Eval
+                    $strStatement = eval($strStatement);
+                }
+            }
+
+            // Do the Replace
+            $strTemplate = substr($strTemplate, 0, $intPosition) . $strStatement . substr($strTemplate, $intPositionEnd + QCodeGen::$TemplateEscapeEndLength);
+
+            // GO to the next Escape Marker (if applicable)
+            $intPosition = strpos($strTemplate, QCodeGen::$TemplateEscapeBegin);
+        }
+        return $strTemplate;
     }
 
     /**
