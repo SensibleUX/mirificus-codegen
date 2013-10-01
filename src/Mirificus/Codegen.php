@@ -470,7 +470,7 @@ abstract class Codegen
 
                 // Add 'return' eval
                 $strStatement = sprintf('return (%s);', $strStatement);
-            } else if (substr($strStatement, 0, 1) == '@') {
+            } elseif (substr($strStatement, 0, 1) == '@') {
                 // Remove Trailing ';' if applicable
                 if (substr($strStatement, strlen($strStatement) - 1) == ';') {
                     $strStatement = trim(substr($strStatement, 0, strlen($strStatement) - 1));
@@ -531,7 +531,7 @@ abstract class Codegen
                 $strStatement = '';
 
             // Check if we're starting an open-ended statement
-            } else if (substr($strStatement, strlen($strStatement) - 1) == '{') {
+            } elseif (substr($strStatement, strlen($strStatement) - 1) == '{') {
                 // We ARE in an open-ended statement
 
                 // SubTemplate is the contents of this open-ended template
@@ -552,7 +552,7 @@ abstract class Codegen
 
                     if ($strFragmentLastCharacter == '{') {
                         $intLevel++;
-                    } else if ($strFragmentLastCharacter == '}') {
+                    } elseif ($strFragmentLastCharacter == '}') {
                         $intLevel--;
                     }
 
