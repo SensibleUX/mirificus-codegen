@@ -429,16 +429,6 @@ abstract class Codegen
      */
     protected function EvaluatePHP($strFilename, $mixArgumentArray)
     {
-        // Get all the arguments and set them locally
-        if ($mixArgumentArray) {
-            foreach ($mixArgumentArray as $strName => $mixValue) {
-                $$strName = $mixValue;
-            }
-        }
-
-        // Of course, we also need to locally allow "objCodeGen"
-        $objCodeGen = $this;
-
         // Get Database Escape Identifiers
         $strEscapeIdentifierBegin = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierBegin;
         $strEscapeIdentifierEnd = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierEnd;
