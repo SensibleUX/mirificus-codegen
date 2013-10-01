@@ -560,9 +560,9 @@ abstract class Codegen
                         $intSubPosition = strpos($strSubTemplate, static::$TemplateEscapeBegin, $intSubPositionEnd);
                     }
                 }
-                if ($intLevel != 0)
+                if ($intLevel != 0) {
                     throw new \Exception("Improperly Terminated OpenEnded Command following; $strStatement");
-
+				}
                 $strSubTemplate = substr($strSubTemplate, 0, $intSubPosition);
 
                 // Remove First Carriage Return (if applicable)
@@ -625,13 +625,15 @@ abstract class Codegen
 
                             // Iterate to setup strStatement
                             $strStatement = '';
-                            if ($objArray) foreach ($objArray as $$strSingleObjectKey => $$strSingleObjectValue) {
-                                $mixArgumentArray[$strSingleObjectKey] = $$strSingleObjectKey;
-                                $mixArgumentArray[$strSingleObjectValue] = $$strSingleObjectValue;
+                            if ($objArray) {
+								foreach ($objArray as $$strSingleObjectKey => $$strSingleObjectValue) {
+									$mixArgumentArray[$strSingleObjectKey] = $$strSingleObjectKey;
+									$mixArgumentArray[$strSingleObjectValue] = $$strSingleObjectValue;
 
-                                $strStatement .= $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
-                                $mixArgumentArray['_INDEX']++;
-                            }
+									$strStatement .= $this->EvaluateTemplate($strSubTemplate, $strModuleName, $mixArgumentArray);
+									$mixArgumentArray['_INDEX']++;
+								}
+							}
                         } else {
                             // Remove leading '$'
                             $strSingleObjectName = substr($strSingleObjectName, 1);
@@ -645,7 +647,6 @@ abstract class Codegen
                                 $mixArgumentArray['_INDEX']++;
                             }
                         }
-
                         break;
 
                     case 'if':
@@ -662,6 +663,7 @@ abstract class Codegen
                             $strStatement = '';
 						}
                         break;
+
                     default:
                         throw new \Exception("Invalid OpenEnded Command: $strStatement");
                 }
@@ -674,7 +676,7 @@ abstract class Codegen
                 if ($intCrPosition !== false) {
                     $strFragment = substr($strTemplate, $intPositionEnd + static::$TemplateEscapeEndLength, $intCrPosition - ($intPositionEnd + static::$TemplateEscapeEndLength));
                     if (trim($strFragment == '')) {
-                        // Nothing exists after the escapeend and the next CR
+                        // Nothing exists after the escapeEnd and the next CR
                         // Go ahead and chop it off
                         $intPositionEnd = $intCrPosition - static::$TemplateEscapeEndLength + 1;
                     }
@@ -699,16 +701,17 @@ abstract class Codegen
                     $intCrPosition = 0;
                 }
 
-                // Inlcude the previous "\r" if applicable
+                // Include the previous "\r" if applicable
                 if (($intCrPosition > 1) && (substr($strTemplate, $intCrPosition - 1, 1) == "\r")) {
                     $intCrLength = 1;
                     $intCrPosition--;
-                } else
+                } else {
                     $intCrLength = 0;
+				}
                 $strFragment = substr($strTemplate, $intCrPosition, $intPosition - $intCrPosition);
 
                 if (trim($strFragment) == '') {
-                    // Nothing exists before the escapebegin and the previous CR
+                    // Nothing exists before the escapeBegin and the previous CR
                     // Go ahead and chop it off (but not the CR or CR/LF)
                     $intPosition = $intCrPosition + $intLfLength + $intCrLength;
                 }
@@ -716,7 +719,9 @@ abstract class Codegen
                 if (is_null($strStatement)) {
                     $strStatement = $strEvaledStatement;
                 } else {
-                    if (static::DebugMode) _p("Evalling: $strStatement<br/>", false);
+					if (static::DebugMode) {
+						echo "Evalling: $strStatement";
+					}
                     // Perform the Eval
                     $strStatement = eval($strStatement);
                 }
