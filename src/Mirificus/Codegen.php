@@ -350,7 +350,7 @@ abstract class Codegen
             if ($strSearchPath != get_include_path()) {
                 throw new CallerException('Can\'t override include path. Make sure your apache or server settings allow include paths to be overriden. ');
             }
-            $strTemplate = $this->EvaluatePHP($strTemplateFilePath, $strModuleName, $mixArgumentArray);
+            $strTemplate = $this->EvaluatePHP($strTemplateFilePath, $mixArgumentArray);
             restore_include_path();
         } else {
             $strTemplate = $this->EvaluateTemplate($strTemplate, $strModuleName, $mixArgumentArray);
@@ -419,6 +419,37 @@ abstract class Codegen
             // Running GenerateFile() specifically asking it not to save -- so return the evaluated template instead
             return $strTemplate;
         }
+    }
+
+    /**
+     * Evaluate PHP.
+     * @param string $strFilename The name of the file being evaluated.
+     * @param array $mixArgumentArray An Array of arguments.
+     * @return string The evaluated template.
+     */
+    protected function EvaluatePHP($strFilename, $mixArgumentArray)
+    {
+        // Get Database Escape Identifiers
+        $strEscapeIdentifierBegin = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierBegin;
+        $strEscapeIdentifierEnd = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierEnd;
+
+        // Store the Output Buffer locally
+        $strAlreadyRendered = ob_get_contents();
+
+        if (ob_get_level()) {
+            ob_clean();
+        }
+        ob_start();
+        include($strFilename);
+        $strTemplate = ob_get_contents();
+        ob_end_clean();
+
+        // Restore the output buffer and return evaluated template
+        print($strAlreadyRendered);
+
+        // Remove all \r from the template (for Win/*nix compatibility)
+        $strTemplate = str_replace("\r", "", $strTemplate);
+        return $strTemplate;
     }
 
     /**
