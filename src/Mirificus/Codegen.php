@@ -322,12 +322,10 @@ abstract class Codegen
         $mixArgumentArray,
         $blnSave = true
     ) {
-        // Figure out the actual TemplateFilePath
-        if ($blnOverrideFlag) {
-            $strTemplateFilePath = __DIR__ . static::TemplatesPathCustom . $strModuleName . '/' . $strFilename;
-        } else {
-            $strTemplateFilePath = __DIR__ . static::TemplatesPath . $strModuleName . '/' . $strFilename;
-        }
+    	// Figure out the actual TemplateFilePath
+    	$strTemplateFilePath = __DIR__;
+        $strTemplateFilePath .= ($blnOverrideFlag) ? static::TemplatesPathCustom : static::TemplatesPath;
+        $strTemplateFilePath .= $strModuleName . '/' . $strFilename;
         // Setup Debug/Exception Message
         if (static::DebugMode) {
             echo "Evaluating $strTemplateFilePath\r\n";
@@ -369,28 +367,25 @@ abstract class Codegen
         try {
             @$objTemplateXml = new SimpleXMLElement($strFirstLine);
         } catch (\Exception $objExc) {
-            
+
         }
 
         if (is_null($objTemplateXml) || (!($objTemplateXml instanceof SimpleXMLElement))) {
             throw new \Exception($strError);
         }
-        $blnOverwriteFlag = Type::Cast($objTemplateXml['OverwriteFlag'], QType::Boolean);
-        $blnDocrootFlag = Type::Cast($objTemplateXml['DocrootFlag'], QType::Boolean);
-        $strTargetDirectory = Type::Cast($objTemplateXml['TargetDirectory'], QType::String);
-        $strDirectorySuffix = Type::Cast($objTemplateXml['DirectorySuffix'], QType::String);
-        $strTargetFileName = Type::Cast($objTemplateXml['TargetFileName'], QType::String);
+        $blnOverwriteFlag = Type::Cast($objTemplateXml['OverwriteFlag'], Type::Boolean);
+        $blnDocrootFlag = Type::Cast($objTemplateXml['DocrootFlag'], Type::Boolean);
+        $strTargetDirectory = Type::Cast($objTemplateXml['TargetDirectory'], Type::String);
+        $strDirectorySuffix = Type::Cast($objTemplateXml['DirectorySuffix'], Type::String);
+        $strTargetFileName = Type::Cast($objTemplateXml['TargetFileName'], Type::String);
 
         if (is_null($blnOverwriteFlag) || is_null($strTargetFileName) || is_null($strTargetDirectory) || is_null($strDirectorySuffix) || is_null($blnDocrootFlag)) {
             throw new \Exception($strError);
         }
         if ($blnSave && $strTargetDirectory) {
             // Figure out the REAL target directory
-            if ($blnDocrootFlag) {
-                $strTargetDirectory = __DOCROOT__ . $strTargetDirectory . $strDirectorySuffix;
-            } else {
-                $strTargetDirectory = $strTargetDirectory . $strDirectorySuffix;
-            }
+            $strTargetDirectory = ($blnDocrootFlag) ? Core::$DocumentRoot : '';
+            $strTargetDirectory .= $strTargetDirectory . $strDirectorySuffix;
             // Create Directory (if needed)
             if (!is_dir($strTargetDirectory)) {
                 if (!Core::MakeDirectory($strTargetDirectory, 0777)) {
@@ -412,7 +407,7 @@ abstract class Codegen
 
         // Why Did We Not Save?
         if ($blnSave) {
-            // We WANT to Save, but QCubed Configuration says that this functionality/feature should no longer be generated
+            // We WANT to Save, but the configuration says that this functionality/feature should no longer be generated
             // By definition, we should return "true"
             return true;
         } else {
