@@ -357,5 +357,4 @@ class DatabaseCodeGen extends Codegen
             $objExc->IncrementOffset();
         }
     }
-
 }
