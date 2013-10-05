@@ -349,7 +349,7 @@ class DatabaseCodeGen extends Codegen
     public function __set($strName, $mixValue)
     {
         try {
-            switch($strName) {
+            switch ($strName) {
                 default:
                     return parent::__set($strName, $mixValue);
             }
