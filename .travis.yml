@@ -2,3 +2,12 @@ language: php
 php:
   - 5.5
   - 5.4
+  
+env:
+  - DB=mysql
+  - DB=pgsql
+  
+notifications:
+  email: "jamescmunro84@gmail.com"
+  
+script: phpunit --version
