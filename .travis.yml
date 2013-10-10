@@ -8,6 +8,6 @@ env:
   - DB=pgsql
   
 notifications:
-  email: "jamescmunro84@gmail.com"
+  email: "mirificus@sensibleux.com"
   
 script: phpunit --version
