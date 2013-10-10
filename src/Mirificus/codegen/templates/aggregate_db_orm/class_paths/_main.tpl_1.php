@@ -1,24 +1,15 @@
-<?php
-	sprintf('<template OverwriteFlag="true" DocrootFlag="false" DirectorySuffix="" TargetDirectory="%s" TargetFileName="_class_paths.inc.php"/>', __MODEL_GEN__);
-	print("\n<?php\n");
+<template OverwriteFlag="true" DocrootFlag="false" DirectorySuffix="" TargetDirectory="<?php echo __MODEL_GEN__  ?>" TargetFileName="_class_paths.inc.php"/>
+<?php print("<?php\n"); ?>
+<?php foreach ($objTableArray as $objTable) { ?>
+	// ClassPaths for the <?php echo $objTable->ClassName  ?> class
+<?php if (__MODEL__) { ?>
+		QApplicationBase::$ClassFile['<?php echo strtolower($objTable->ClassName)  ?>'] = __MODEL__ . '/<?php echo $objTable->ClassName  ?>.class.php';
+		QApplicationBase::$ClassFile['qqnode<?php echo strtolower($objTable->ClassName)  ?>'] = __MODEL__ . '/<?php echo $objTable->ClassName  ?>.class.php';
+		QApplicationBase::$ClassFile['qqreversereferencenode<?php echo strtolower($objTable->ClassName)  ?>'] = __MODEL__ . '/<?php echo $objTable->ClassName  ?>.class.php';
+<?php } ?><?php if (__META_CONTROLS__) { ?>
+		QApplicationBase::$ClassFile['<?php echo strtolower($objTable->ClassName)  ?>metacontrol'] = __META_CONTROLS__ . '/<?php echo $objTable->ClassName  ?>MetaControl.class.php';
+		QApplicationBase::$ClassFile['<?php echo strtolower($objTable->ClassName)  ?>datagrid'] = __META_CONTROLS__ . '/<?php echo $objTable->ClassName  ?>DataGrid.class.php';
+<?php } ?>
 
-	
-	foreach ($objTableArray as $objTable) {
-		sprintf('// ClassPaths for the %s class', $objTable->ClassName);
-		print("\n");
-		if (__MODEL__) {
-			sprintf('QApplicationBase::$ClassFile[\'%s\'] = __MODEL__ . \'/%s.class.php\';', strtolower($objTable->ClassName), $objTable->ClassName);
-			print("\n");
-			sprintf('QApplicationBase::$ClassFile[\'qqnode%s\'] = __MODEL__ . \'/%s.class.php\';', strtolower($objTable->ClassName), $objTable->ClassName);
-			print("\n");
-			sprintf('QApplicationBase::$ClassFile[\'qqreversereferencenode%s\'] = __MODEL__ . \'/%s.class.php\';', strtolower($objTable->ClassName), $objTable->ClassName);
-			print("\n");
-
-		}
-		if (__META_CONTROLS__) { 
-			sprintf('QApplicationBase::$ClassFile[\'%smetacontrol\'] = __META_CONTROLS__ . \'/%sMetaControl.class.php\';', strtolower($objTable->ClassName), $objTable->ClassName);
-			print("\n");
-			sprintf('QApplicationBase::$ClassFile[\'%sdatagrid\'] = __META_CONTROLS__ . \'/%sDataGrid.class.php\';', strtolower($objTable->ClassName), $objTable->ClassName);
-			print("\n");
-		}
-	}
+<?php } ?>
+?>
