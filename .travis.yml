@@ -1,13 +1,21 @@
 language: php
 php:
-  - 5.5
-  - 5.4
-  
+- 5.5
+- 5.4
 env:
+  matrix:
   - DB=mysql
   - DB=pgsql
-  
+  global:
+  - secure: aQiryYs5suwk+pWPxoMolS9vo2jGcrqQYJ8pVk3sai1ccbqnufP4YU/951VQOamTDVkjdo/U8Vb9dczU1aLKJ3lNRTk/pAzgtMa0pJA/mjEBg9BhIx7BVo0y+FfQKASuUKO5WGkVqLYUZjVsRWtpiA5RwdREaqL3b1hxuFFNpB0=
+  - secure: hn0CSh/eTO2lmvAdEr7Xz4kI7JRamAioZ1Rd/B1gAddTbs12Um69A1K1dhbEU4YI5rTT1kgyju2OPPNROpCglK4eHlQ+PuGTNSx7Hjco11rTMNbqmVcdDoLM6PI2N/SkR2uwc6q2QjJ0QYdcVbT9ptIg0OZv4uH4Yi0Wh6Bi31U=
+  - secure: tP57xNsNVx5AGcH3PVvf9jq8VX4mpE2B/WHYvM2USyKbV0PqjVkrA71LWBNUdrVGBczLydGAt0Vd8L8XzPpP8NFVbCXba5tbvNbKjWr944jBd5Vy+VH6ZWIvBlwqwT541EG6IyLibmObW5k2atONKEUQDDdp6J4aDPdh5tjNixk=
+  - secure: N3Uzo9GKBiSniiEc6MWZz64/DD9Ox3oB300gfaFXJzvO5G+NnaFvGNhAq8gStVjhXUVGsryCfzWFgIV5GvM6ccjmn1vxzY/uInxchnNcIb2XxPo27rRoNBp5ul/NbHzq5JmXkhzbZ29sgfjOYUMJGje5wYVX7d0hNvH+7lZY6/Q=
 notifications:
-  email: "mirificus@sensibleux.com"
+  email: mirificus@sensibleux.com
+
+before_script: composer install
   
-script: phpunit --version
+script: phpunit tests/
+
+after_success: ./build.sh $JENKINS_KEY $API_TOKEN $USER
