@@ -1,4 +1,4 @@
-# Mirificus
+# Mirificus ![Travis Status](https://api.travis-ci.org/SensibleUX/mirificus-codegen.png)
 
 A [PSR-0](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md), [PSR-1](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-1-basic-coding-standard.md) and [PSR-2](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-2-coding-style-guide.md) standards compliant PHP library.
 
