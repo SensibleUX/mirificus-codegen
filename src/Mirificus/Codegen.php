@@ -3,6 +3,7 @@
 /**
  * @package Mirificus
  */
+
 namespace Mirificus;
 
 /**
@@ -102,10 +103,10 @@ abstract class Codegen
      */
     protected $strErrors;
 
-	/**
-	 * @var string $GeneratedOutputDirectory The folder in which to output the generated code.
-	 * @access protected
-	 */
+    /**
+     * @var string $GeneratedOutputDirectory The folder in which to output the generated code.
+     * @access protected
+     */
     protected $GeneratedOutputDirectory;
 
     /**
@@ -320,14 +321,11 @@ abstract class Codegen
      * @return mixed The evaluated template or boolean save success.
      */
     public function GenerateFile(
-        $strModuleName,
-        $strFilename,
-        $blnOverrideFlag,
-        $mixArgumentArray,
-        $blnSave = true
-    ) {
-    	// Figure out the actual TemplateFilePath
-    	$strTemplateFilePath = __DIR__;
+    $strModuleName, $strFilename, $blnOverrideFlag, $mixArgumentArray, $blnSave = true
+    )
+    {
+        // Figure out the actual TemplateFilePath
+        $strTemplateFilePath = __DIR__;
         $strTemplateFilePath .= ($blnOverrideFlag) ? static::TemplatesPathCustom : static::TemplatesPath;
         $strTemplateFilePath .= $strModuleName . '/' . $strFilename;
 
@@ -372,7 +370,7 @@ abstract class Codegen
         try {
             @$objTemplateXml = new SimpleXMLElement($strFirstLine);
         } catch (\Exception $objExc) {
-
+            
         }
 
         if (is_null($objTemplateXml) || (!($objTemplateXml instanceof SimpleXMLElement))) {
@@ -734,7 +732,7 @@ abstract class Codegen
         return $strTemplate;
     }
 
-	/**
+    /**
      * Evaluate PHP.
      * @param string $strFilename The name of the file being evaluated.
      * @param array $mixArgumentArray An Array of arguments.
@@ -742,7 +740,7 @@ abstract class Codegen
      */
     protected function EvaluatePHP($strFilename, $mixArgumentArray)
     {
-    	// Get all the arguments and set them locally
+        // Get all the arguments and set them locally
         if ($mixArgumentArray) {
             foreach ($mixArgumentArray as $strName => $mixValue) {
                 $$strName = $mixValue;
@@ -816,40 +814,43 @@ abstract class Codegen
     }
 
     /**
-	 * Override method to perform a property "Get"
-	 * This will get the value of $strName
-	 *
-	 * @param string strName Name of the property to get
-	 * @return mixed
-	 */
-	public function __get($strName) {
-		switch ($strName) {
-			case 'Errors':
-				return $this->strErrors;
-			default:
-				throw new CallerException("Invalid Property ".$strName);
-				return;
+     * Override method to perform a property "Get"
+     * This will get the value of $strName
+     *
+     * @param string strName Name of the property to get
+     * @return mixed
+     */
+    public function __get($strName)
+    {
+        switch ($strName) {
+            case 'Errors':
+                return $this->strErrors;
+            default:
+                throw new CallerException("Invalid Property " . $strName);
+                return;
 //				try {
 //					return parent::__get($strName);
 //				} catch (CallerException $objExc) {
 //					$objExc->IncrementOffset();
 //					throw $objExc;
 //				}
-		}
-	}
+        }
+    }
 
-	public function __set($strName, $mixValue) {
-		try {
-			switch($strName) {
-				case 'Errors':
-					return ($this->strErrors = Type::Cast($mixValue, Type::String));
-				default:
-					throw new CallerException("Invalid Property ".$strName);
-					return;
-					//return parent::__set($strName, $mixValue);
-			}
-		} catch (CallerException $objExc) {
-			$objExc->IncrementOffset();
-		}
-	}
+    public function __set($strName, $mixValue)
+    {
+        try {
+            switch ($strName) {
+                case 'Errors':
+                    return ($this->strErrors = Type::Cast($mixValue, Type::String));
+                default:
+                    throw new CallerException("Invalid Property " . $strName);
+                    return;
+                //return parent::__set($strName, $mixValue);
+            }
+        } catch (CallerException $objExc) {
+            $objExc->IncrementOffset();
+        }
+    }
+
 }
