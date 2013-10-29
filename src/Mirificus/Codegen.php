@@ -3,6 +3,7 @@
 /**
  * @package Mirificus
  */
+
 namespace Mirificus;
 
 /**
@@ -101,6 +102,12 @@ abstract class Codegen
      * @access protected
      */
     protected $strErrors;
+
+    /**
+     * @var string $GeneratedOutputDirectory The folder in which to output the generated code.
+     * @access protected
+     */
+    protected $GeneratedOutputDirectory;
 
     /**
      * Run the codegen with a settings file. The settings file is in XML.
@@ -318,11 +325,10 @@ abstract class Codegen
     )
     {
         // Figure out the actual TemplateFilePath
-        if ($blnOverrideFlag) {
-            $strTemplateFilePath = __DIR__ . static::TemplatesPathCustom . $strModuleName . '/' . $strFilename;
-        } else {
-            $strTemplateFilePath = __DIR__ . static::TemplatesPath . $strModuleName . '/' . $strFilename;
-        }
+        $strTemplateFilePath = __DIR__;
+        $strTemplateFilePath .= ($blnOverrideFlag) ? static::TemplatesPathCustom : static::TemplatesPath;
+        $strTemplateFilePath .= $strModuleName . '/' . $strFilename;
+
         // Setup Debug/Exception Message
         if (static::DebugMode) {
             echo "Evaluating $strTemplateFilePath\r\n";
@@ -364,28 +370,25 @@ abstract class Codegen
         try {
             @$objTemplateXml = new SimpleXMLElement($strFirstLine);
         } catch (\Exception $objExc) {
-
+            
         }
 
         if (is_null($objTemplateXml) || (!($objTemplateXml instanceof SimpleXMLElement))) {
             throw new \Exception($strError);
         }
-        $blnOverwriteFlag = Type::Cast($objTemplateXml['OverwriteFlag'], QType::Boolean);
-        $blnDocrootFlag = Type::Cast($objTemplateXml['DocrootFlag'], QType::Boolean);
-        $strTargetDirectory = Type::Cast($objTemplateXml['TargetDirectory'], QType::String);
-        $strDirectorySuffix = Type::Cast($objTemplateXml['DirectorySuffix'], QType::String);
-        $strTargetFileName = Type::Cast($objTemplateXml['TargetFileName'], QType::String);
+        $blnOverwriteFlag = Type::Cast($objTemplateXml['OverwriteFlag'], Type::Boolean);
+        $blnDocrootFlag = Type::Cast($objTemplateXml['DocrootFlag'], Type::Boolean);
+        $strTargetDirectory = Type::Cast($objTemplateXml['TargetDirectory'], Type::String);
+        $strDirectorySuffix = Type::Cast($objTemplateXml['DirectorySuffix'], Type::String);
+        $strTargetFileName = Type::Cast($objTemplateXml['TargetFileName'], Type::String);
 
         if (is_null($blnOverwriteFlag) || is_null($strTargetFileName) || is_null($strTargetDirectory) || is_null($strDirectorySuffix) || is_null($blnDocrootFlag)) {
             throw new \Exception($strError);
         }
         if ($blnSave && $strTargetDirectory) {
             // Figure out the REAL target directory
-            if ($blnDocrootFlag) {
-                $strTargetDirectory = __DOCROOT__ . $strTargetDirectory . $strDirectorySuffix;
-            } else {
-                $strTargetDirectory = $strTargetDirectory . $strDirectorySuffix;
-            }
+            $strTargetDirectory = ($blnDocrootFlag) ? Core::$DocumentRoot : '';
+            $strTargetDirectory .= $strTargetDirectory . $strDirectorySuffix;
             // Create Directory (if needed)
             if (!is_dir($strTargetDirectory)) {
                 if (!Core::MakeDirectory($strTargetDirectory, 0777)) {
@@ -407,7 +410,7 @@ abstract class Codegen
 
         // Why Did We Not Save?
         if ($blnSave) {
-            // We WANT to Save, but QCubed Configuration says that this functionality/feature should no longer be generated
+            // We WANT to Save, but the configuration says that this functionality/feature should no longer be generated
             // By definition, we should return "true"
             return true;
         } else {
@@ -729,7 +732,7 @@ abstract class Codegen
         return $strTemplate;
     }
 
-	/**
+    /**
      * Evaluate PHP.
      * @param string $strFilename The name of the file being evaluated.
      * @param array $mixArgumentArray An Array of arguments.
@@ -737,6 +740,13 @@ abstract class Codegen
      */
     protected function EvaluatePHP($strFilename, $mixArgumentArray)
     {
+        // Get all the arguments and set them locally
+        if ($mixArgumentArray) {
+            foreach ($mixArgumentArray as $strName => $mixValue) {
+                $$strName = $mixValue;
+            }
+        }
+
         // Get Database Escape Identifiers
         $strEscapeIdentifierBegin = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierBegin;
         $strEscapeIdentifierEnd = Core::$Database[$this->intDatabaseIndex]->EscapeIdentifierEnd;
@@ -802,4 +812,45 @@ abstract class Codegen
                 return $strName . "s";
         }
     }
+
+    /**
+     * Override method to perform a property "Get"
+     * This will get the value of $strName
+     *
+     * @param string strName Name of the property to get
+     * @return mixed
+     */
+    public function __get($strName)
+    {
+        switch ($strName) {
+            case 'Errors':
+                return $this->strErrors;
+            default:
+                throw new CallerException("Invalid Property " . $strName);
+                return;
+//				try {
+//					return parent::__get($strName);
+//				} catch (CallerException $objExc) {
+//					$objExc->IncrementOffset();
+//					throw $objExc;
+//				}
+        }
+    }
+
+    public function __set($strName, $mixValue)
+    {
+        try {
+            switch ($strName) {
+                case 'Errors':
+                    return ($this->strErrors = Type::Cast($mixValue, Type::String));
+                default:
+                    throw new CallerException("Invalid Property " . $strName);
+                    return;
+                //return parent::__set($strName, $mixValue);
+            }
+        } catch (CallerException $objExc) {
+            $objExc->IncrementOffset();
+        }
+    }
+
 }

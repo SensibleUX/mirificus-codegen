@@ -11,7 +11,7 @@
 
 	<!-- Define Data Sources (e.g. Databases, Services, etc.) -->
 	<dataSources>
-		<database index="1">
+		<database index="0">
 			<!-- Append Prefixes/Suffixes to the Following Code Generated Items -->
 			<className prefix="" suffix=""/>
 			<associatedObjectName prefix="" suffix=""/>
