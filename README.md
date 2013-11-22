@@ -7,3 +7,7 @@ This is borrowed from QCubed/QCodo and is the most mirificus package in Mirificu
 Codegen can create an ORM from almost any source, and can also generate classes from any mappable source.
 
 ![Mirificus logo](http://sensibleux.com/wp-content/uploads/2013/09/mirificus.png "Mirificus PHP Library")
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/SensibleUX/mirificus-codegen/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
